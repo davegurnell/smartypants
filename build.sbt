@@ -1,12 +1,10 @@
 organization := "com.davegurnell"
+name         := "smartypants"
+version      := "0.1.0"
+licenses     += ("Apache-2.0", url("http://apache.org/licenses/LICENSE-2.0"))
 
-name := "smartypants"
-
-version := "0.1.0-SNAPSHOT"
-
-scalaOrganization := "org.typelevel"
-scalaVersion := "2.12.0"
-
+scalaOrganization  := "org.typelevel"
+scalaVersion       := "2.12.0"
 crossScalaVersions := Seq("2.11.8", "2.12.0")
 
 scalacOptions ++= Seq(
@@ -18,8 +16,6 @@ scalacOptions ++= Seq(
 )
 
 addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
-
-resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies ++= Seq(
   "org.scala-lang"   % "scala-reflect" % scalaVersion.value,

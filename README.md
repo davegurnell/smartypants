@@ -16,6 +16,13 @@ Add the following to your `build.sbt`:
 libraryDependencies += "com.davegurnell" %% "smartypants" % "<<VERSION>>"
 ~~~
 
+You also need to add the Macro Paradise compiler plugin to your project
+(otherwise the `@smart` annotation won't do anything):
+
+~~~ scala
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+~~~
+
 ## Synopsis
 
 Smartypants provides a `@smart` macro
