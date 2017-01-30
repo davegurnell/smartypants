@@ -13,10 +13,8 @@ class Macros(val c: blackbox.Context) {
         val ctorType = constructorType(supers)
         val ctorDefn = q"def $ctorName: $ctorType = $name"
 
-        // println(name)
-        // println(" - " + ctorName)
-        // println(" - " + ctorType)
-        // println(" - " + ctorDefn)
+        // println(name + " => " + ctorDefn)
+
         c.Expr[Any](q"$target; $ctorDefn")
 
       case (target @ q"..$mods class $tpe[..$tparams] $ctorMods(...$paramss) extends { ..$earlyDefns} with ..$supers { $self => ..$defns }") :: _ =>
@@ -27,16 +25,13 @@ class Macros(val c: blackbox.Context) {
         val exprParamss = expressionParamss(ctorParamss)
         val ctorDefn    = q"def $ctorName[..$ctorTParams](...$ctorParamss): $ctorType = new $tpe(...$exprParamss)"
 
-        // println(tpe)
-        // println(" - " + ctorName)
-        // println(" - " + ctorType)
-        // println(" - " + ctorTParams)
-        // println(" - " + ctorParamss)
-        // println(" - " + exprParamss)
-        // println(" - " + ctorDefn)
+        // println(tpe + " => " + ctorDefn)
+
         c.Expr[Any](q"$target; $ctorDefn")
 
       case target :: _ =>
+        // println(target + " => !!!")
+
         c.abort(c.enclosingPosition, "The @smart annotation can only be used on an inner class or object definition")
     }
 
