@@ -27,3 +27,21 @@ libraryDependencies ++= Seq(
   "org.scalatest"   %% "scalatest"     % "3.0.1" % "test",
   "com.chuusai"     %% "shapeless"     % "2.3.2" % "test"
 )
+
+pomExtra in Global := {
+  <url>https://github.com/davegurnell/smartypants</url>
+  <scm>
+    <connection>scm:git:github.com/davegurnell/smartypants</connection>
+    <developerConnection>scm:git:git@github.com:davegurnell/smartypants</developerConnection>
+    <url>github.com/davegurnell/smartypants</url>
+  </scm>
+  <developers>
+    <developer>
+      <id>davegurnell</id>
+      <name>Dave Gurnell</name>
+      <url>http://davegurnell.com</url>
+      <organization>Underscore</organization>
+      <organizationUrl>http://underscore.io</organizationUrl>
+    </developer>
+  </developers>
+}
