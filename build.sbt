@@ -1,6 +1,6 @@
 organization := "com.davegurnell"
 name         := "smartypants"
-version      := "0.2.0"
+version      := "0.3.0-SNAPSHOT"
 licenses     += ("Apache-2.0", url("http://apache.org/licenses/LICENSE-2.0"))
 
 scalaOrganization  := "org.typelevel"
