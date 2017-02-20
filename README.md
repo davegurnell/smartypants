@@ -6,7 +6,7 @@ Copyright 2015 Dave Gurnell. Licensed [Apache 2][license].
 
 [![Build Status](https://travis-ci.org/davegurnell/smartypants.svg?branch=develop)](https://travis-ci.org/davegurnell/smartypants)
 [![Coverage status](https://img.shields.io/codecov/c/github/davegurnell/smartypants/develop.svg)](https://codecov.io/github/davegurnell/smartypants)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.davegurnell/smartypants_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.davegurnell/smartypants_2.11)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.davegurnell/smartypants_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.davegurnell/smartypants_2.12)
 
 ## Getting Started
 
