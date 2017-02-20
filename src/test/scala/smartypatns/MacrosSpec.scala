@@ -32,16 +32,23 @@ object MacrosSpec {
     @smart[RetypeDemo] final case class Sub6[A](a: A) extends RetypeDemo2
   }
 
-  sealed trait EverythingDemo extends Product with Serializable
-  sealed trait EverythingDemo2 extends EverythingDemo
+  sealed trait KitchenSinkDemo extends Product with Serializable
+  sealed trait KitchenSinkDemo2 extends KitchenSinkDemo
 
-  object EverythingDemo {
-    @smart("renamed1") final case object Sub1 extends EverythingDemo2
-    @smart("renamed2") final case class Sub2(a: Int, b: String) extends EverythingDemo2
-    @smart("renamed3") final case class Sub3[A](a: A) extends EverythingDemo2
-    @smart[EverythingDemo]("renamed4") final case object Sub4 extends EverythingDemo2
-    @smart[EverythingDemo]("renamed5") final case class Sub5(a: Int, b: String) extends EverythingDemo2
-    @smart[EverythingDemo]("renamed6") final case class Sub6[A](a: A) extends EverythingDemo2
+  object KitchenSinkDemo {
+    @smart("renamed1") final case object Sub1 extends KitchenSinkDemo2
+    @smart("renamed2") final case class Sub2(a: Int, b: String) extends KitchenSinkDemo2
+    @smart("renamed3") final case class Sub3[A](a: A) extends KitchenSinkDemo2
+    @smart[KitchenSinkDemo]("renamed4") final case object Sub4 extends KitchenSinkDemo2
+    @smart[KitchenSinkDemo]("renamed5") final case class Sub5(a: Int, b: String) extends KitchenSinkDemo2
+    @smart[KitchenSinkDemo]("renamed6") final case class Sub6[A](a: A) extends KitchenSinkDemo2
+  }
+
+  sealed abstract class ConstructorParamDemo(val value: Int) extends Product with Serializable
+
+  object ConstructorParamDemo {
+    @smart final case object Sub1 extends ConstructorParamDemo(1)
+    @smart final case object Sub2 extends ConstructorParamDemo(2)
   }
 }
 
@@ -101,12 +108,19 @@ class MacrosSpec extends FreeSpec with Matchers {
 
   "@smart annotation with type parameter and value parameter" - {
     "retypes and renames generated smart constructors" in {
-      val a: EverythingDemo2 = EverythingDemo.renamed1
-      val b: EverythingDemo2 = EverythingDemo.renamed2(123, "abc")
-      val c: EverythingDemo2 = EverythingDemo.renamed3(123)
+      val a: KitchenSinkDemo2 = KitchenSinkDemo.renamed1
+      val b: KitchenSinkDemo2 = KitchenSinkDemo.renamed2(123, "abc")
+      val c: KitchenSinkDemo2 = KitchenSinkDemo.renamed3(123)
       illTyped("""val d: RetypeDemo2 = RetypeDemo.renamed4""")
       illTyped("""val e: RetypeDemo2 = RetypeDemo.renamed5(123, "abc")""")
       illTyped("""val f: RetypeDemo2 = RetypeDemo.renamed6(123)""")
+    }
+  }
+
+  "@smart annotation with supertype with constructor parameters" - {
+    "references the correct constructor parameters" in {
+      ConstructorParamDemo.sub1.value should be(ConstructorParamDemo.Sub1.value)
+      ConstructorParamDemo.sub2.value should be(ConstructorParamDemo.Sub2.value)
     }
   }
 }
