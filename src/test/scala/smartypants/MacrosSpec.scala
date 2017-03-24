@@ -50,6 +50,26 @@ object MacrosSpec {
     @smart final case object Sub1 extends ConstructorParamDemo(1)
     @smart final case object Sub2 extends ConstructorParamDemo(2)
   }
+
+  // This is the use case I want:
+  @smarter
+  sealed abstract class SmarterDemo extends Product with Serializable
+
+  object SmarterDemo {
+    final case object Sub1 extends SmarterDemo
+    final case object Sub2 extends SmarterDemo
+  }
+
+  // This is a test using a def macro instead of a macro annotation,
+  // to see if the issue is specific to macro annotations:
+  sealed abstract class SmartestDemo extends Product with Serializable
+
+  object SmartestDemo {
+    final case object Sub1 extends SmartestDemo
+    final case object Sub2 extends SmartestDemo
+
+    val theAnswer = Smartypants.smartest[SmartestDemo]
+  }
 }
 
 class MacrosSpec extends FreeSpec with Matchers {
