@@ -4,7 +4,7 @@ version      := "0.3.0-SNAPSHOT"
 licenses     += ("Apache-2.0", url("http://apache.org/licenses/LICENSE-2.0"))
 
 scalaOrganization  := "org.typelevel"
-scalaVersion       := "2.12.0"
+scalaVersion       := "2.12.1"
 crossScalaVersions := Seq("2.11.8", "2.12.0")
 
 scalacOptions ++= Seq(
