@@ -6,63 +6,64 @@ import scala.reflect.macros.blackbox
 class Macros(val c: blackbox.Context) {
   import c.universe._
 
-  def smartestMacro[A: WeakTypeTag]: c.Expr[Unit] = {
-    val tag = weakTypeOf[A]
-
-    println("output from 'smartest' macro...")
-
-    val supertype = tag.typeSymbol.typeSignature
-    println(" - supertype " + supertype + " " + supertype.getClass.getSimpleName)
-
-    // This gets the subtypes nicely
-    // but we can't introduce new identifiers with a blackbox macro,
-    // so it's not useful for introducing smart constructors:
-    val subtypes = tag.typeSymbol.asClass.knownDirectSubclasses.map(_.asType)
-    println(" - subtypes " + subtypes + " " + subtypes.getClass.getSimpleName)
-
-    c.Expr[Unit](q"()")
-  }
-
-  def smarterMacro(annottees: c.Expr[Any]*): c.Expr[Any] =
+  def smartsMacro(annottees: c.Expr[Any]*): c.Expr[Any] =
     annottees.map(_.tree).toList match {
-      case cls :: obj :: _ =>
-        val q"..$_ class $tpe[..$tparams] $ctorMods(...$paramss) extends { ..$_} with ..$_ { $_ => ..$_ }" = cls
-        val q"..$_ object $name extends {..$_ } with ..$_ { $_ => ..$defns }" = obj
+      case (target @ q"..$mods object $name extends {..$earlyDefns } with ..$supers { $self => ..$defns }") :: _ =>
 
-        println("output from 'smarter' macro...")
+        def nameFromTree(tree: Tree): Option[Name] =
+          tree match {
+            case Ident(n)               => Some(n)
+            case Apply(Ident(n), _)     => Some(n)
+            case TypeApply(Ident(n), _) => Some(n)
+            case _                      => None
+          }
 
-        // This type checking doesn't work,
-        // presumably for the reasons outlined by Chris Birchall here:
-        // http://stackoverflow.com/questions/39916994/how-to-debug-a-macro-annotation
-        val clsTpe = c.typecheck(Ident(tpe), mode = c.TYPEmode, silent = true, withMacrosDisabled = true)
-        println(" - clsTpe " + clsTpe + " " + clsTpe.getClass.getSimpleName)
+        val supertypeName: Name =
+          constructorTypeFromAnnotation
+            .flatMap(nameFromTree)
+            .getOrElse(name match { case TermName(n) => TypeName(n) })
 
-        val clsSubtpes = clsTpe.symbol.asClass.knownDirectSubclasses.map(_.asType)
-        println(" - clsSubtpes " + clsSubtpes + " " + clsSubtpes.getClass.getSimpleName)
+        def hasTypeName(name: Name)(tree: Tree): Boolean =
+          nameFromTree(tree).contains(supertypeName)
 
-        c.Expr[Any](q"$cls; $obj")
+        val smartsDefns: List[Tree] =
+          defns.flatMap {
+            case defn @ q"..$_ object $_ extends { ..$_ } with ..$supers { $_ => ..$_ }" =>
+              println("supertype check " + supers + " " + supertypeName + " " + supers.exists(hasTypeName(supertypeName)))
+              if(supers.exists(hasTypeName(supertypeName))) smartMacroImpl(defn) else List(defn)
+            case defn @ q"..$_ class $_[..$_] $_(...$_) extends { ..$_} with ..$supers { $_ => ..$_ }" =>
+              println("supertype check " + supers + " " + supertypeName + " " + supers.exists(hasTypeName(supertypeName)))
+              if(supers.exists(hasTypeName(supertypeName))) smartMacroImpl(defn) else List(defn)
+            case defn =>
+              println("no supertype check " + defn)
+              List(defn)
+          }
 
-      case cls :: _ =>
-        println("class only")
-        println(cls)
-        c.Expr[Any](q"$cls")
+        c.Expr[Any](q"$mods object $name extends { ..$earlyDefns } with ..$supers { $self => ..$smartsDefns } ; ")
 
-      case Nil =>
+      case _ =>
         c.abort(c.enclosingPosition, "Whu?! Annotation found without a class or object definition!")
     }
 
   def smartMacro(annottees: c.Expr[Any]*): c.Expr[Any] =
-    annottees.map(_.tree).toList match {
-      case (target @ q"..$mods object $name extends {..$earlyDefns } with ..$supers { $self => ..$defns }") :: _ =>
+    annottees.map(_.tree).toList
+      .headOption
+      .map(smartMacroImpl)
+      .map(trees => c.Expr[Any](trees.reduceLeft((a, b) => q"$a; $b")))
+      .getOrElse(c.abort(c.enclosingPosition, "The @smart annotation can only be used on an inner class or object definition"))
+
+  def smartMacroImpl(tree: Tree): List[Tree] =
+    tree match {
+      case defn @ q"..$mods object $name extends {..$earlyDefns } with ..$supers { $self => ..$defns }" =>
         val ctorName = constructorName(name.toString)
         val ctorType = constructorType(supers)
         val ctorDefn = q"def $ctorName: $ctorType = $name"
 
         // println(s"OBJECT ${name} => ${ctorDefn}")
 
-        c.Expr[Any](q"$target; $ctorDefn")
+        List(defn, ctorDefn)
 
-      case (target @ q"..$mods class $tpe[..$tparams] $ctorMods(...$paramss) extends { ..$earlyDefns} with ..$supers { $self => ..$defns }") :: _ =>
+      case defn @ q"..$mods class $tpe[..$tparams] $ctorMods(...$paramss) extends { ..$earlyDefns} with ..$supers { $self => ..$defns }" =>
         val ctorName    = constructorName(tpe.toString)
         val ctorType    = constructorType(supers)
         val ctorTParams = tparams
@@ -72,16 +73,21 @@ class Macros(val c: blackbox.Context) {
 
         // println(s"CLASS ${tpe} => ${ctorDefn}")
 
-        c.Expr[Any](q"$target; $ctorDefn")
+        List(defn, ctorDefn)
 
-      case target :: _ =>
-        // println(s"UNKNOWN ${target} => FAIL")
+      case defn =>
+        // println(s"UNKNOWN ${defn} => FAIL")
 
-        c.abort(c.enclosingPosition, "The @smart annotation can only be used on an inner class or object definition")
+        List(defn)
     }
 
   private def constructorName(base: String): TermName = {
     def defaultName = TermName(base.head.toLower + base.tail)
+
+    def capitalise(name: TermName): TermName = {
+      val TermName(n) = name
+      TermName(n.head.toUpper + n.tail)
+    }
 
     c.macroApplication match {
       case q"new smart[..$_]($param).macroTransform(..$_)" =>
@@ -91,21 +97,38 @@ class Macros(val c: blackbox.Context) {
           case _ =>
             defaultName
         }
+
+      case q"new smarts[..$_]($param).macroTransform(..$_)" =>
+        param match {
+          case Literal(Constant(prefix: String)) =>
+            TermName(prefix + capitalise(defaultName))
+          case _ =>
+            defaultName
+        }
+
       case _ =>
         defaultName
     }
   }
 
-  private def constructorType(supers: List[Tree]): Tree =
+  private def constructorTypeFromAnnotation: Option[Tree] =
     c.macroApplication match {
-      case q"new smart[$tparam, ..$_](...$_).macroTransform(..$_)" =>
-        tparam
+      case q"new $_[$tparam, ..$_](...$_).macroTransform(..$_)" =>
+        Some(tparam)
       case _ =>
-        supers.head match {
-          case Apply(tpe, params) => tpe
-          case tpe => tpe
-        }
+        None
     }
+
+  private def constructorTypeFromSupertypes(supers: List[Tree]): Option[Tree] =
+    supers.headOption map {
+      case Apply(tpe, params) => tpe
+      case tpe => tpe
+    }
+
+  private def constructorType(supers: List[Tree]): Tree =
+    constructorTypeFromAnnotation
+      .orElse(constructorTypeFromSupertypes(supers))
+      .getOrElse(c.abort(c.enclosingPosition, "Could not determine supertype"))
 
   private def constructorParamss(paramss: List[List[Tree]]): List[List[Tree]] =
     paramss.map { params =>

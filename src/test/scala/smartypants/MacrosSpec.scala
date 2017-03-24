@@ -51,24 +51,31 @@ object MacrosSpec {
     @smart final case object Sub2 extends ConstructorParamDemo(2)
   }
 
-  // This is the use case I want:
-  @smarter
-  sealed abstract class SmarterDemo extends Product with Serializable
+  sealed abstract class SmartsDemo extends Product with Serializable
 
-  object SmarterDemo {
-    final case object Sub1 extends SmarterDemo
-    final case object Sub2 extends SmarterDemo
+  @smarts
+  object SmartsDemo {
+    final case object Sub1 extends SmartsDemo
+    final case object Sub2 extends SmartsDemo
+    final case object NonSub1
   }
 
-  // This is a test using a def macro instead of a macro annotation,
-  // to see if the issue is specific to macro annotations:
-  sealed abstract class SmartestDemo extends Product with Serializable
+  sealed abstract class SmartsPrefixDemo extends Product with Serializable
 
-  object SmartestDemo {
-    final case object Sub1 extends SmartestDemo
-    final case object Sub2 extends SmartestDemo
+  @smarts[SmartsPrefixDemo]("prefixed")
+  object SmartsPrefixDemo {
+    final case object Sub1 extends SmartsPrefixDemo
+    final case object Sub2 extends SmartsPrefixDemo
+    final case object NonSub1
+  }
 
-    val theAnswer = Smartypants.smartest[SmartestDemo]
+  sealed abstract class SmartsConstructorParamDemo(val value: Int) extends Product with Serializable
+
+  @smarts[SmartsConstructorParamDemo]
+  object SmartsConstructorParamDemo {
+    final case object Sub1 extends SmartsConstructorParamDemo(1)
+    final case object Sub2 extends SmartsConstructorParamDemo(2)
+    final case object NonSub1
   }
 }
 
@@ -141,6 +148,32 @@ class MacrosSpec extends FreeSpec with Matchers {
     "references the correct constructor parameters" in {
       ConstructorParamDemo.sub1.value should be(ConstructorParamDemo.Sub1.value)
       ConstructorParamDemo.sub2.value should be(ConstructorParamDemo.Sub2.value)
+    }
+  }
+
+  "@smarts annotation with no type parameter" - {
+    "compiles" in {
+      SmartsDemo.sub1 should be(SmartsDemo.Sub1)
+      SmartsDemo.sub2 should be(SmartsDemo.Sub2)
+    }
+  }
+
+  "@smarts annotation with type parameter and prefix" - {
+    "compiles" in {
+      SmartsPrefixDemo.prefixedSub1 should be(SmartsPrefixDemo.Sub1)
+      SmartsPrefixDemo.prefixedSub2 should be(SmartsPrefixDemo.Sub2)
+    }
+
+    "skips definitions with the wrong supertype" in {
+      illTyped("""SmartsPrefixDemo.nonSub1""")
+      illTyped("""SmartsPrefixDemo.prefixedNonSub1""")
+    }
+  }
+
+  "@smarts annotation with supertype with constructor parameter" - {
+    "compiles" in {
+      SmartsConstructorParamDemo.sub1.value should be(SmartsConstructorParamDemo.Sub1.value)
+      SmartsConstructorParamDemo.sub2.value should be(SmartsConstructorParamDemo.Sub2.value)
     }
   }
 }

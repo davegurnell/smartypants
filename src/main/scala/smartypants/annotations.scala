@@ -6,10 +6,6 @@ class smart[A](name: String = "") extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro Macros.smartMacro
 }
 
-class smarter[A] extends StaticAnnotation {
-  def macroTransform(annottees: Any*): Any = macro Macros.smarterMacro
-}
-
-object Smartypants {
-  def smartest[A]: Unit = macro Macros.smartestMacro[A]
+class smarts[A](prefix: String = "") extends StaticAnnotation {
+  def macroTransform(annottees: Any*): Any = macro Macros.smartsMacro
 }
